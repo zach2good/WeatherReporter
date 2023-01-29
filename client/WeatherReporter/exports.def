@@ -1,0 +1,4 @@
+LIBRARY "WeatherReporter"
+EXPORTS
+    expCreatePlugin             @1
+    expGetInterfaceVersion      @2
