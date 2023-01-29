@@ -35,7 +35,10 @@
 
 #include "Ashita.h"
 
-#include "task_system.hpp"
+namespace ts
+{
+    class task_system;
+}
 
 template <typename T, typename U>
 T& ref(U* buf, std::size_t index)
@@ -73,6 +76,8 @@ public:
     bool DetectRetail();
 
 private:
+    uint32_t m_WorldId;
+
     std::unique_ptr<ts::task_system> m_TaskSystem;
 };
 

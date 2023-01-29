@@ -23,10 +23,16 @@
 
 #include "WeatherReporter.hpp"
 
+#pragma comment(lib, "Psapi.lib")
+#include <Psapi.h>
+
+#include "task_system.hpp"
+
 WeatherReporter::WeatherReporter(void)
     : m_AshitaCore{nullptr}
     , m_LogManager{nullptr}
     , m_PluginId(0)
+    , m_WorldId(0)
 {
 }
 
@@ -79,6 +85,39 @@ bool WeatherReporter::Initialize(IAshitaCore* core, ILogManager* logger, const u
     this->m_AshitaCore = core;
     this->m_LogManager = logger;
     this->m_PluginId   = id;
+
+    // Thanks atom0s!:
+    // Ashita::Memory::FindPattern(...)
+    // A1 ?? ?? ?? ?? 66 8B 4C 24 04 66 89 88 ?? ?? ?? ?? E8
+    // +0x01 is pointer to the pGcMainSys object which holds the current set world id.
+    // +0x0D is the offset into pGcMainSys where its stored in the event it ever shifts from an update. (Unlikely at this point.)
+
+    // Find FFXiMain.dll module for base and size info..
+    MODULEINFO mod{};
+    if (!::GetModuleInformation(::GetCurrentProcess(), ::GetModuleHandleA("FFXiMain.dll"), &mod, sizeof(MODULEINFO)))
+    {
+        // Failed to find FFXiMain.dll..
+        return false;
+    }
+
+    // Find the pGcMainSys pointer..
+    const auto base = Ashita::Memory::FindPattern((uintptr_t)mod.lpBaseOfDll, mod.SizeOfImage, "A1????????668B4C2404668988????????E8", 0x01, 0);
+    if (base == 0)
+    {
+        // Failed to find base pointer..
+        return false;
+    }
+
+    // Read the pointer..
+    const auto ptr = *(uint32_t*)base;
+    if (ptr == 0)
+    {
+        // Failed to read base pointer..
+        return false;
+    }
+
+    // Read the world id..
+    m_WorldId = *(uint32_t*)(ptr + 0x130);
 
     this->m_TaskSystem = std::make_unique<ts::task_system>(1);
 
@@ -152,7 +191,30 @@ void WeatherReporter::SendPutRequest(std::string base, std::string path, std::st
 
 bool WeatherReporter::DetectRetail()
 {
-    return GetModuleHandleA("polhook.dll") != NULL;
+    // https://github.com/atom0s/XiPackets/blob/main/lobby/Notes.md#worldid
+    // 0x62 - Undine
+    // 0x64 - Bahamut
+    // 0x65 - Shiva
+    // 0x68 - Phoenix
+    // 0x69 - Carbuncle
+    // 0x6A - Fenrir
+    // 0x6B - Sylph
+    // 0x6C - Valefor
+    // 0x6E - Leviathan
+    // 0x6F - Odin
+    // 0x73 - Quetzalcoatl
+    // 0x74 - Siren
+    // 0x77 - Ragnarok
+    // 0x7A - Cerberus
+    // 0x7C - Bismarck
+    // 0x7E - Lakshmi
+    // 0x7F - Asura
+
+    // TODO: Test and hook this up
+    auto notRetailId = m_WorldId >= 0x62 && m_WorldId <= 0x7F;
+    std::ignore      = notRetailId;
+
+    return GetModuleHandleA("polhook.dll") != NULL; //&& notRetailId;
 }
 
 __declspec(dllexport) IPlugin* __stdcall expCreatePlugin(const char* args)
