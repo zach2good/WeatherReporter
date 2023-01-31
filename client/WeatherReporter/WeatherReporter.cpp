@@ -176,7 +176,8 @@ void WeatherReporter::SendPutRequest(std::string base, std::string path, std::st
     }
 
     m_LogManager->Log(4, "WeatherReporter", std::string(base + path + " :: " + payload).c_str());
-    this->m_TaskSystem->schedule([this, base, path, payload]() {
+    this->m_TaskSystem->schedule([this, base, path, payload]()
+    {
         try
         {
             httplib::Client cli(base);

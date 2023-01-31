@@ -14,7 +14,7 @@ def execute(query):
 
 
 def insert_weather(zone, weather, timestamp, submitter):
-    execute(f"INSERT INTO weather_data VALUES ({zone}, {weather}, {timestamp}, {submitter})")
+    execute(f"INSERT INTO weather_data VALUES ({zone}, {weather}, {timestamp}, '{submitter}')")
 
 
 def insert_static_data():
@@ -341,17 +341,30 @@ def insert_static_data():
     cursor.execute("INSERT OR REPLACE INTO zone_names VALUES (297, 'DYNAMIS_JEUNO_D')")
     cursor.execute("INSERT OR REPLACE INTO zone_names VALUES (298, 'WALK_OF_ECHOES_P1')")
 
+    print("Testing weather_names:")
+    cursor.execute("SELECT * FROM weather_names LIMIT 5")
+    for entry in cursor.fetchall():
+        print(entry)
+    print("")
+
+    print("Testing zone_names:")
+    cursor.execute("SELECT * FROM zone_names LIMIT 5")
+    for entry in cursor.fetchall():
+        print(entry)
+    print("")
+
+    print("Testing weather_data:")
     cursor.execute("""
-        SELECT zone_names.name, weather_names.name, DATETIME(weather_data.timestamp, 'unixepoch')
+        SELECT zone_names.name, weather_names.name, DATETIME(weather_data.timestamp, 'unixepoch'), weather_data.submitter
         FROM weather_data
         LEFT JOIN zone_names on zone_names.zone = weather_data.zone
         LEFT JOIN weather_names on weather_names.weather = weather_data.weather
         ORDER BY weather_data.timestamp DESC
-        LIMIT 10
+        LIMIT 5
     """)
-
     for entry in cursor.fetchall():
         print(entry)
+    print("")
 
     cursor.close()
 
@@ -367,7 +380,7 @@ def weather_put_post_handler():
 
     sha = hashlib.sha256()
     sha.update(str(hash(request.access_route[-1])).encode('utf-8'))
-    submitter = sha.hexdigest()
+    submitter = sha.digest().hex()
 
     insert_weather(zone, weather, timestamp, submitter)
 
@@ -386,11 +399,19 @@ def main_get_handler():
 
 if __name__ == "__main__":
     connection = sqlite3.connect("db.sqlite", isolation_level=None)
-    connection.execute('pragma journal_mode=wal;')
+    connection.execute('pragma journal_mode=wal;') # Only needs to be specified once per sqlite db file
 
-    execute("CREATE TABLE IF NOT EXISTS weather_data (zone SMALLINT, weather TINYINT, timestamp BIGINT, submitter TEXT);")
-    execute("CREATE TABLE IF NOT EXISTS weather_names (weather TINYINT, name TEXT);")
-    execute("CREATE TABLE IF NOT EXISTS zone_names (zone SMALLINT, name TEXT);")
+    execute("CREATE TABLE IF NOT EXISTS weather_data (zone SMALLINT, weather TINYINT, timestamp BIGINT, submitter TEXT)")
+    execute("DROP INDEX IF EXISTS idx_weather_data_zone")
+    execute("CREATE UNIQUE INDEX idx_weather_data_zone ON weather_data(zone)")
+
+    execute("CREATE TABLE IF NOT EXISTS weather_names (weather TINYINT, name TEXT)")
+    execute("DROP INDEX IF EXISTS idx_weather_names_weather")
+    execute("CREATE UNIQUE INDEX idx_weather_names_weather ON weather_names(weather)")
+
+    execute("CREATE TABLE IF NOT EXISTS zone_names (zone SMALLINT, name TEXT)")
+    execute("DROP INDEX IF EXISTS idx_zone_names_zone")
+    execute("CREATE UNIQUE INDEX idx_zone_names_zone ON zone_names(zone)")
 
     insert_static_data()
 
