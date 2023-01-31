@@ -1,6 +1,7 @@
 from flask import Flask, request
 import sqlite3
-
+import hashlib
+ 
 
 app = Flask(__name__)
 
@@ -12,8 +13,8 @@ def execute(query):
     cursor.close()
 
 
-def insert_weather(zone, weather, timestamp):
-    execute(f"INSERT INTO weather_data VALUES ({zone}, {weather}, {timestamp})")
+def insert_weather(zone, weather, timestamp, submitter):
+    execute(f"INSERT INTO weather_data VALUES ({zone}, {weather}, {timestamp}, {submitter})")
 
 
 def insert_static_data():
@@ -364,7 +365,11 @@ def weather_put_post_handler():
     weather = int(parts[1])
     timestamp = int(parts[2])
 
-    insert_weather(zone, weather, timestamp)
+    sha = hashlib.sha256()
+    sha.update(str(hash(request.access_route[-1])).encode('utf-8'))
+    submitter = sha.hexdigest()
+
+    insert_weather(zone, weather, timestamp, submitter)
 
     return "WeatherReporter::Success", 200
 
@@ -383,7 +388,7 @@ if __name__ == "__main__":
     connection = sqlite3.connect("db.sqlite", isolation_level=None)
     connection.execute('pragma journal_mode=wal;')
 
-    execute("CREATE TABLE IF NOT EXISTS weather_data (zone SMALLINT, weather TINYINT, timestamp BIGINT);")
+    execute("CREATE TABLE IF NOT EXISTS weather_data (zone SMALLINT, weather TINYINT, timestamp BIGINT, submitter TEXT);")
     execute("CREATE TABLE IF NOT EXISTS weather_names (weather TINYINT, name TEXT);")
     execute("CREATE TABLE IF NOT EXISTS zone_names (zone SMALLINT, name TEXT);")
 
