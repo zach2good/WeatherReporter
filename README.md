@@ -6,7 +6,7 @@
 
 Download the pre-compiled plugin dll [here](https://github.com/zach2good/WeatherReporter/raw/main/client/Release/WeatherReporter.dll).
 
-An Ashita-v4 C++ plugin which spins up a background thread and sends a HTTP `PUT` request to the server with the following data:
+An Ashita-v4 C++ plugin which non-intrusively collects and sends weather data to the cloud when you change zones or when the weather changes. The data sent to the cloud is:
 
 - Zone number
 - Weather type
@@ -77,3 +77,8 @@ total 44
 
 >>>:~$ 
 ```
+
+## TODO
+
+- Make the server address and endpoints configurable
+- Collect more types of information (events, event params, Mob/NPC data, etc.)
