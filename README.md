@@ -14,6 +14,8 @@ An Ashita-v4 C++ plugin which spins up a background thread and sends a HTTP `PUT
 
 In the format: `zonenumber,weathertype,timestamp`
 
+**NOTE:** Nothing bad will happen if you use this (or leave it on) while playing on private servers, the plugin will just be idle and not collect or send any information.
+
 ### Usage
 
 - Copy in compiled DLL to `<ashita>/plugins/`
