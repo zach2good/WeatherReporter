@@ -4,8 +4,6 @@
 
 `/client`
 
-Download the pre-compiled plugin dll [here](https://github.com/zach2good/WeatherReporter/raw/main/client/Release/WeatherReporter.dll).
-
 An Ashita-v4 C++ plugin which non-intrusively collects and sends weather data to the cloud when you change zones or when the weather changes. The data sent to the cloud is:
 
 - Zone number
@@ -14,7 +12,7 @@ An Ashita-v4 C++ plugin which non-intrusively collects and sends weather data to
 
 In the format: `zonenumber,weathertype,timestamp`
 
-**NOTE:** Nothing bad will happen if you use this (or leave it on) while playing on private servers, the plugin will just be idle and not collect or send any information.
+Download the pre-compiled plugin dll [here](https://github.com/zach2good/WeatherReporter/raw/main/client/Release/WeatherReporter.dll).
 
 ### Usage
 
@@ -22,6 +20,11 @@ In the format: `zonenumber,weathertype,timestamp`
 - Either:
   - Add `/load WeatherReporter` to the bottom of your `<ashita>/scripts/default.txt` file
   - In game: `/load WeatherReporter`
+
+### NOTES
+
+- The pre-compiled DLL may be flagged by your antivirus. This is a false positive, sorry! If you're unsure about the DLL, feel free to poke around in the code and to build it locally.
+- Nothing bad will happen if you use this (or leave it on) while playing on private servers, the plugin will just be idle and not collect or send any information.
 
 ## Server
 
