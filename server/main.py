@@ -2,7 +2,7 @@ from flask import Flask, request
 import sqlite3
 import hashlib
 import atexit
-
+from tabulate import tabulate
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
@@ -18,12 +18,12 @@ def update_get_data():
 
     results = []
     cursor.execute("""
-        SELECT zone_names.name, weather_names.name, DATETIME(weather_data.timestamp, 'unixepoch'), SUBSTR(weather_data.submitter, 0, 5)
+        SELECT zone_names.name, weather_names.name, DATETIME(weather_data.timestamp, 'unixepoch'), SUBSTR(weather_data.submitter, 0, 9)
         FROM weather_data
         LEFT JOIN zone_names on zone_names.zone = weather_data.zone
         LEFT JOIN weather_names on weather_names.weather = weather_data.weather
         ORDER BY weather_data.timestamp DESC
-        LIMIT 10
+        LIMIT 20
     """)
     for entry in cursor.fetchall():
         results.append(entry)
@@ -427,12 +427,13 @@ def weather_put_post_handler():
 @app.route("/weather", methods=["GET"])
 def weather_get_handler():
     global get_data
-    return get_data, 200
+    return tabulate(get_data, tablefmt='html'), 200
 
 
 @app.route("/", methods=["GET"])
 def main_get_handler():
-    return "Success", 200
+    global get_data
+    return tabulate(get_data, tablefmt='html'), 200
 
 
 if __name__ == "__main__":
