@@ -442,7 +442,6 @@ if __name__ == "__main__":
 
     execute("CREATE TABLE IF NOT EXISTS weather_data (zone SMALLINT, weather TINYINT, timestamp BIGINT, submitter TEXT)")
     execute("DROP INDEX IF EXISTS idx_weather_data_zone")
-    execute("CREATE UNIQUE INDEX idx_weather_data_zone ON weather_data(zone)")
 
     execute("CREATE TABLE IF NOT EXISTS weather_names (weather TINYINT, name TEXT)")
     execute("DROP INDEX IF EXISTS idx_weather_names_weather")
