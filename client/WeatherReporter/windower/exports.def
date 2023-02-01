@@ -1,0 +1,4 @@
+LIBRARY _WeatherReporter.dll
+
+EXPORTS
+	luaopen__WeatherReporter

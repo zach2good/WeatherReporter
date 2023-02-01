@@ -21,18 +21,15 @@
  * along with Ashita Example Plugin.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "WeatherReporter.hpp"
+#include "ashita_plugin.h"
 
-#pragma comment(lib, "Psapi.lib")
-#include <Psapi.h>
-
-#include "task_system.hpp"
+#pragma comment(lib, "psapi.lib")
+#include <psapi.h>
 
 WeatherReporter::WeatherReporter(void)
     : m_AshitaCore{nullptr}
     , m_LogManager{nullptr}
     , m_PluginId(0)
-    , m_WorldId(0)
 {
 }
 
@@ -86,49 +83,14 @@ bool WeatherReporter::Initialize(IAshitaCore* core, ILogManager* logger, const u
     this->m_LogManager = logger;
     this->m_PluginId   = id;
 
-    // Thanks atom0s!:
-    // Ashita::Memory::FindPattern(...)
-    // A1 ?? ?? ?? ?? 66 8B 4C 24 04 66 89 88 ?? ?? ?? ?? E8
-    // +0x01 is pointer to the pGcMainSys object which holds the current set world id.
-    // +0x0D is the offset into pGcMainSys where its stored in the event it ever shifts from an update. (Unlikely at this point.)
-
-    // Find FFXiMain.dll module for base and size info..
-    MODULEINFO mod{};
-    if (!::GetModuleInformation(::GetCurrentProcess(), ::GetModuleHandleA("FFXiMain.dll"), &mod, sizeof(MODULEINFO)))
-    {
-        // Failed to find FFXiMain.dll..
-        return false;
-    }
-
-    // Find the pGcMainSys pointer..
-    const auto base = Ashita::Memory::FindPattern((uintptr_t)mod.lpBaseOfDll, mod.SizeOfImage, "A1????????668B4C2404668988????????E8", 0x01, 0);
-    if (base == 0)
-    {
-        // Failed to find base pointer..
-        return false;
-    }
-
-    // Read the pointer..
-    const auto ptr = *(uint32_t*)base;
-    if (ptr == 0)
-    {
-        // Failed to read base pointer..
-        return false;
-    }
-
-    // Read the world id..
-    m_WorldId = *(uint32_t*)(ptr + 0x130);
-
-    this->m_TaskSystem = std::make_unique<ts::task_system>(1);
+    this->wrCore = std::make_unique<WeatherReporterCore>();
 
     return true;
 }
 
 void WeatherReporter::Release(void)
 {
-    // Tiny sleep, just to make sure the Task System is clear
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(100ms);
+    this->wrCore = nullptr;
 }
 
 bool WeatherReporter::HandleIncomingPacket(uint16_t id, uint32_t size, const uint8_t* data, uint8_t* modified, uint32_t sizeChunk, const uint8_t* dataChunk, bool injected, bool blocked)
@@ -149,7 +111,9 @@ bool WeatherReporter::HandleIncomingPacket(uint16_t id, uint32_t size, const uin
         unsigned char weather  = modified[0x68];
         unsigned long long utc = static_cast<unsigned long>(std::time(0));
         std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-        SendPutRequest(URL, "/weather", payload);
+        this->wrCore->SendPutRequest(URL, "/weather", payload, [this](std::string errString) {
+            m_LogManager->Log(2, "WeatherReporter", errString.c_str());
+        });
     }
     // Weather Change
     else if (id == 0x057)
@@ -162,69 +126,21 @@ bool WeatherReporter::HandleIncomingPacket(uint16_t id, uint32_t size, const uin
         unsigned char weather  = modified[0x08];
         unsigned long long utc = static_cast<unsigned long>(std::time(0));
         std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-        SendPutRequest(URL, "/weather", payload);
+        this->wrCore->SendPutRequest(URL, "/weather", payload, [this](std::string errString) {
+            m_LogManager->Log(2, "WeatherReporter", errString.c_str());
+        });
     }
 
     return false;
 }
 
-void WeatherReporter::SendPutRequest(std::string base, std::string path, std::string payload)
-{
-    if (!DetectRetail())
-    {
-        return;
-    }
-
-    m_LogManager->Log(4, "WeatherReporter", std::string(base + path + " :: " + payload).c_str());
-    this->m_TaskSystem->schedule([this, base, path, payload]()
-    {
-        try
-        {
-            httplib::Client cli(base);
-            std::ignore = cli.Put(path, payload, "text");
-        }
-        catch (std::exception e)
-        {
-            m_LogManager->Log(2, "WeatherReporter", e.what());
-        }
-    });
-}
-
-bool WeatherReporter::DetectRetail()
-{
-    // https://github.com/atom0s/XiPackets/blob/main/lobby/Notes.md#worldid
-    // 0x62 - Undine
-    // 0x64 - Bahamut
-    // 0x65 - Shiva
-    // 0x68 - Phoenix
-    // 0x69 - Carbuncle
-    // 0x6A - Fenrir
-    // 0x6B - Sylph
-    // 0x6C - Valefor
-    // 0x6E - Leviathan
-    // 0x6F - Odin
-    // 0x73 - Quetzalcoatl
-    // 0x74 - Siren
-    // 0x77 - Ragnarok
-    // 0x7A - Cerberus
-    // 0x7C - Bismarck
-    // 0x7E - Lakshmi
-    // 0x7F - Asura
-
-    // TODO: Test and hook this up
-    auto notRetailId = m_WorldId >= 0x62 && m_WorldId <= 0x7F;
-    std::ignore      = notRetailId;
-
-    return GetModuleHandleA("polhook.dll") != NULL; //&& notRetailId;
-}
-
-__declspec(dllexport) IPlugin* __stdcall expCreatePlugin(const char* args)
+extern "C" __declspec(dllexport) IPlugin* __stdcall expCreatePlugin(const char* args)
 {
     UNREFERENCED_PARAMETER(args);
     return new WeatherReporter();
 }
 
-__declspec(dllexport) double __stdcall expGetInterfaceVersion(void)
+extern "C" __declspec(dllexport) double __stdcall expGetInterfaceVersion(void)
 {
     return ASHITA_INTERFACE_VERSION;
 }

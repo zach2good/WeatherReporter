@@ -28,17 +28,9 @@
 #pragma once
 #endif
 
-// NOTE: These have to be imported before Ashita.h, since it includes windows.h
-#define WIN32_LEAN_AND_MEAN
-#include <WinSock2.h>
-#include "httplib.h"
+#include "../weather_reporter_core.h"
 
 #include "Ashita.h"
-
-namespace ts
-{
-    class task_system;
-}
 
 template <typename T, typename U>
 T& ref(U* buf, std::size_t index)
@@ -51,6 +43,9 @@ class WeatherReporter final : public IPlugin
     IAshitaCore* m_AshitaCore; // The pointer to the main AshitaCore object.
     ILogManager* m_LogManager; // The pointer to the main Ashita LogManager object.
     uint32_t m_PluginId;       // The plugins id. (The plugins current base address.)
+
+    std::unique_ptr<WeatherReporterCore> wrCore;
+
 public:
     WeatherReporter(void);
     ~WeatherReporter(void) override;
@@ -70,15 +65,6 @@ public:
     void Release(void) override;
 
     bool HandleIncomingPacket(uint16_t id, uint32_t size, const uint8_t* data, uint8_t* modified, uint32_t sizeChunk, const uint8_t* dataChunk, bool injected, bool blocked) override;
-
-    void SendPutRequest(std::string base, std::string path, std::string payload);
-
-    bool DetectRetail();
-
-private:
-    uint32_t m_WorldId;
-
-    std::unique_ptr<ts::task_system> m_TaskSystem;
 };
 
 #endif // ASHITA_WeatherReporter_HPP_INCLUDED
