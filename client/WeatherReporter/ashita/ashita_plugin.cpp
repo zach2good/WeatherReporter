@@ -59,7 +59,7 @@ const char* WeatherReporter::GetLink(void) const
 
 double WeatherReporter::GetVersion(void) const
 {
-    return 1.0f;
+    return 1.1f;
 }
 
 double WeatherReporter::GetInterfaceVersion(void) const
@@ -111,9 +111,7 @@ bool WeatherReporter::HandleIncomingPacket(uint16_t id, uint32_t size, const uin
         unsigned char weather  = modified[0x68];
         unsigned long long utc = static_cast<unsigned long>(std::time(0));
         std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-        this->wrCore->SendPutRequest(URL, "/weather", payload, [this](std::string errString) {
-            m_LogManager->Log(2, "WeatherReporter", errString.c_str());
-        });
+        this->wrCore->SendPutRequest(URL, "/weather", payload);
     }
     // Weather Change
     else if (id == 0x057)
@@ -126,9 +124,7 @@ bool WeatherReporter::HandleIncomingPacket(uint16_t id, uint32_t size, const uin
         unsigned char weather  = modified[0x08];
         unsigned long long utc = static_cast<unsigned long>(std::time(0));
         std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-        this->wrCore->SendPutRequest(URL, "/weather", payload, [this](std::string errString) {
-            m_LogManager->Log(2, "WeatherReporter", errString.c_str());
-        });
+        this->wrCore->SendPutRequest(URL, "/weather", payload);
     }
 
     return false;

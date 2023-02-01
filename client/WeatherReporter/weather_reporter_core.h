@@ -24,7 +24,7 @@ public:
     WeatherReporterCore& operator=(WeatherReporterCore&& other) = delete;
 
     void SendPutRequest(
-        std::string base, std::string path, std::string payload, std::function<void(std::string)> errorCallback);
+        std::string base, std::string path, std::string payload);
     bool DetectRetail();
 
 private:

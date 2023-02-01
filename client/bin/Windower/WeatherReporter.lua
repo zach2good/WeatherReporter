@@ -1,6 +1,6 @@
 _addon.name = 'WeatherReporter'
 _addon.author = 'zach2good, Heals'
-_addon.version = '1.0'
+_addon.version = '1.1'
 _addon.command = 'WeatherReporter'
 
 -- package.cpath somehow doesn't appreciate backslashes

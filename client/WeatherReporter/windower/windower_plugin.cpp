@@ -65,9 +65,7 @@ namespace
             unsigned char weather  = data.data()[0x68];
             unsigned long long utc = static_cast<unsigned long>(std::time(0));
             std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-            wrCore.SendPutRequest(URL, "/weather", payload, [](std::string errString) {
-                Print(errString);
-            });
+            wrCore.SendPutRequest(URL, "/weather", payload);
         }
         // Weather Change
         else if (id == 0x057)
@@ -80,9 +78,7 @@ namespace
             unsigned char weather  = data.data()[0x08];
             unsigned long long utc = static_cast<unsigned long>(std::time(0));
             std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-            wrCore.SendPutRequest(URL, "/weather", payload, [](std::string errString) {
-                Print(errString);
-            });
+            wrCore.SendPutRequest(URL, "/weather", payload);
         }
     }
 } // namespace

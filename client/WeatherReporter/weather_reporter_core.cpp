@@ -1,13 +1,13 @@
 #include "weather_reporter_core.h"
 
-void WeatherReporterCore::SendPutRequest(std::string base, std::string path, std::string payload, std::function<void(std::string)> errorCallback)
+void WeatherReporterCore::SendPutRequest(std::string base, std::string path, std::string payload)
 {
     if (!DetectRetail())
     {
         return;
     }
 
-    m_TaskSystem.schedule([this, base, path, payload, errorCallback]() {
+    m_TaskSystem.schedule([this, base, path, payload]() {
         try
         {
             httplib::Client cli(base);
@@ -15,12 +15,11 @@ void WeatherReporterCore::SendPutRequest(std::string base, std::string path, std
         }
         catch (std::exception e)
         {
-            errorCallback(e.what());
+            // TODO: Error logging
         }
     });
 }
 
-// TODO: Make this more robust
 bool WeatherReporterCore::DetectRetail()
 {
     return GetModuleHandleA("polhook.dll") != NULL;
