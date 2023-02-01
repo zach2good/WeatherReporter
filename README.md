@@ -76,3 +76,5 @@ screen -XS <session-id> quit
 
 - Make the server address and endpoints configurable
 - Collect more types of information (events, event params, Mob/NPC data, etc.)
+- Install as a service on the server, provide helper scripts to install as a service
+- Provide a small UI in the client to show the last 3 weathers in your current zone and when they changed

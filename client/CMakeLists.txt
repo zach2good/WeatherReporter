@@ -56,8 +56,15 @@ set(WINDOWER_SOURCES
 
 add_library(WeatherReporterWindower SHARED ${CORE_SOURCES} ${WINDOWER_SOURCES})
 
-target_include_directories(WeatherReporterWindower PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/SDKs/Windower/LUA/)
-target_link_libraries(WeatherReporterWindower PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/SDKs/Windower/LuaCore_exports.lib)
+target_compile_definitions(WeatherReporterWindower PUBLIC -DSOL_ALL_SAFETIES_ON=1)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/sol)
+
+target_include_directories(WeatherReporterWindower PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/SDKs/Windower/LUA/
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/sol/include)
+target_link_libraries(WeatherReporterWindower PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/SDKs/Windower/LuaCore_exports.lib
+    sol2_single)
 
 set_property(TARGET WeatherReporterWindower PROPERTY CXX_STANDARD 20)
 set_property(TARGET WeatherReporterWindower PROPERTY CXX_STANDARD_REQUIRED ON)

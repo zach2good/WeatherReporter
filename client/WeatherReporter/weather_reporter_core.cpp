@@ -20,6 +20,7 @@ void WeatherReporterCore::SendPutRequest(std::string base, std::string path, std
     });
 }
 
+// TODO: Make this more robust
 bool WeatherReporterCore::DetectRetail()
 {
     return GetModuleHandleA("polhook.dll") != NULL;

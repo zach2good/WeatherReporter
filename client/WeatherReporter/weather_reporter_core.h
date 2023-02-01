@@ -7,6 +7,12 @@
 
 #include <string>
 
+template <typename T, typename U>
+T& ref(U* buf, std::size_t index)
+{
+    return *reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(buf) + index);
+}
+
 class WeatherReporterCore
 {
 public:

@@ -32,12 +32,6 @@
 
 #include "Ashita.h"
 
-template <typename T, typename U>
-T& ref(U* buf, std::size_t index)
-{
-    return *reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(buf) + index);
-}
-
 class WeatherReporter final : public IPlugin
 {
     IAshitaCore* m_AshitaCore; // The pointer to the main AshitaCore object.

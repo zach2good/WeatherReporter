@@ -37,56 +37,63 @@ extern "C"
 #include "lua.h"
 }
 
+#include <sol/sol.hpp>
+
 #include "../weather_reporter_core.h"
 
 namespace
 {
-    int Print(lua_State* L, const char* str)
-    {
-        lua_getglobal(L, "print");
-        if (lua_isfunction(L, -1))
-        {
-            lua_pushstring(L, str);
-            lua_pcall(L, 1, 0, 0);
-        }
+    std::unique_ptr<sol::state_view> lua;
 
-        return 0;
+    void Print(std::string str)
+    {
+        (*lua)["print"](str);
     }
 
-    int SendPutRequest(lua_State* L)
+    void SendPutRequest(sol::table table, std::string data)
     {
         static WeatherReporterCore wrCore;
 
-        // TODO: FIXME
-        lua_gettable(L, 1);
-        lua_getfield(L, -1, "zone");
-        int zone = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-        lua_pop(L, 1);
+        auto id = ref<uint16_t>(data.data(), 0) & 0x1FF;
 
-        auto data = lua_tostring(L, 2);
+        std::string URL = "http://35.209.198.215";
 
-        int weather = 0;
-
-        int epoch = 0;
-
-        std::string payload = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(epoch);
-
-        wrCore.SendPutRequest("http://35.209.198.215", "/weather", payload, [&L](std::string errString) {
-            Print(L, errString.c_str());
-        });
-
-        return 0;
+        // Zone In
+        if (id == 0x00A)
+        {
+            unsigned short zone    = ref<unsigned short>(data.data(), 0x30);
+            unsigned char weather  = data.data()[0x68];
+            unsigned long long utc = static_cast<unsigned long>(std::time(0));
+            std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
+            wrCore.SendPutRequest(URL, "/weather", payload, [](std::string errString) {
+                Print(errString);
+            });
+        }
+        // Weather Change
+        else if (id == 0x057)
+        {
+            unsigned short zone = table["zone"];
+            if (!zone)
+            {
+                return;
+            }
+            unsigned char weather  = data.data()[0x08];
+            unsigned long long utc = static_cast<unsigned long>(std::time(0));
+            std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
+            wrCore.SendPutRequest(URL, "/weather", payload, [](std::string errString) {
+                Print(errString);
+            });
+        }
     }
 } // namespace
 
 extern "C" __declspec(dllexport) int luaopen__WeatherReporter(lua_State* L)
 {
-    struct luaL_reg api[] = {
-        {"submit", ::SendPutRequest},
-        {NULL, NULL}};
+    lua = std::make_unique<sol::state_view>(L);
 
-    luaL_register(L, "_WeatherReporter", api);
+    (*lua).create_table("_WeatherReporter");
+    (*lua)["_WeatherReporter"]["print"]  = &::Print;
+    (*lua)["_WeatherReporter"]["submit"] = &::SendPutRequest;
 
     return 1;
 }
