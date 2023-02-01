@@ -441,7 +441,6 @@ if __name__ == "__main__":
     connection.execute('pragma journal_mode=wal;') # Only needs to be specified once per sqlite db file
 
     execute("CREATE TABLE IF NOT EXISTS weather_data (zone SMALLINT, weather TINYINT, timestamp BIGINT, submitter TEXT)")
-    execute("DROP INDEX IF EXISTS idx_weather_data_zone")
 
     execute("CREATE TABLE IF NOT EXISTS weather_names (weather TINYINT, name TEXT)")
     execute("DROP INDEX IF EXISTS idx_weather_names_weather")
