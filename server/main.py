@@ -1,9 +1,46 @@
 from flask import Flask, request
 import sqlite3
 import hashlib
- 
+import atexit
+
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
+
+get_data = []
+
+
+def update_get_data():
+    connection = sqlite3.connect("db.sqlite", isolation_level=None)
+    cursor = connection.cursor()
+
+    print("Updating get_data")
+
+    results = []
+    cursor.execute("""
+        SELECT zone_names.name, weather_names.name, DATETIME(weather_data.timestamp, 'unixepoch'), SUBSTR(weather_data.submitter, 0, 5)
+        FROM weather_data
+        LEFT JOIN zone_names on zone_names.zone = weather_data.zone
+        LEFT JOIN weather_names on weather_names.weather = weather_data.weather
+        ORDER BY weather_data.timestamp DESC
+        LIMIT 10
+    """)
+    for entry in cursor.fetchall():
+        results.append(entry)
+
+    global get_data
+    get_data = results
+
+    cursor.close()
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=update_get_data, trigger="interval", seconds=60)
+scheduler.start()
+
+
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())
 
 
 def execute(query):
@@ -389,7 +426,8 @@ def weather_put_post_handler():
 
 @app.route("/weather", methods=["GET"])
 def weather_get_handler():
-    return "WeatherReporter::Success", 200
+    global get_data
+    return get_data, 200
 
 
 @app.route("/", methods=["GET"])
@@ -414,5 +452,7 @@ if __name__ == "__main__":
     execute("CREATE UNIQUE INDEX idx_zone_names_zone ON zone_names(zone)")
 
     insert_static_data()
+
+    update_get_data()
 
     app.run(port=80, host="0.0.0.0")
