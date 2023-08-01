@@ -53,33 +53,10 @@ namespace
     void SendPutRequest(sol::table table, std::string data)
     {
         static WeatherReporterCore wrCore;
-
-        auto id = ref<uint16_t>(data.data(), 0) & 0x1FF;
-
-        std::string URL = "http://35.209.198.215";
-
-        // Zone In
-        if (id == 0x00A)
-        {
-            unsigned short zone    = ref<unsigned short>(data.data(), 0x30);
-            unsigned char weather  = data.data()[0x68];
-            unsigned long long utc = static_cast<unsigned long>(std::time(0));
-            std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-            wrCore.SendPutRequest(URL, "/weather", payload);
-        }
-        // Weather Change
-        else if (id == 0x057)
-        {
-            unsigned short zone = table["zone"];
-            if (!zone)
-            {
-                return;
-            }
-            unsigned char weather  = data.data()[0x08];
-            unsigned long long utc = static_cast<unsigned long>(std::time(0));
-            std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-            wrCore.SendPutRequest(URL, "/weather", payload);
-        }
+        CharacterInfo info;
+        info.name   = table["name"];
+        info.zoneId = table["zone"];
+        wrCore.HandlePacketData(info, (uint8_t*)data.data(), data.size());
     }
 } // namespace
 

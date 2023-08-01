@@ -95,38 +95,10 @@ void WeatherReporter::Release(void)
 
 bool WeatherReporter::HandleIncomingPacket(uint16_t id, uint32_t size, const uint8_t* data, uint8_t* modified, uint32_t sizeChunk, const uint8_t* dataChunk, bool injected, bool blocked)
 {
-    UNREFERENCED_PARAMETER(size);
-    UNREFERENCED_PARAMETER(data);
-    UNREFERENCED_PARAMETER(sizeChunk);
-    UNREFERENCED_PARAMETER(dataChunk);
-    UNREFERENCED_PARAMETER(injected);
-    UNREFERENCED_PARAMETER(blocked);
-
-    std::string URL = "http://35.209.198.215";
-
-    // Zone In
-    if (id == 0x00A)
-    {
-        unsigned short zone    = ref<unsigned short>(modified, 0x30);
-        unsigned char weather  = modified[0x68];
-        unsigned long long utc = static_cast<unsigned long>(std::time(0));
-        std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-        this->wrCore->SendPutRequest(URL, "/weather", payload);
-    }
-    // Weather Change
-    else if (id == 0x057)
-    {
-        unsigned short zone = m_AshitaCore->GetMemoryManager()->GetParty()->GetMemberZone(0);
-        if (!zone)
-        {
-            return false;
-        }
-        unsigned char weather  = modified[0x08];
-        unsigned long long utc = static_cast<unsigned long>(std::time(0));
-        std::string payload    = std::to_string(zone) + "," + std::to_string(weather) + "," + std::to_string(utc);
-        this->wrCore->SendPutRequest(URL, "/weather", payload);
-    }
-
+    CharacterInfo info;
+    info.name   = m_AshitaCore->GetMemoryManager()->GetParty()->GetMemberName(0);
+    info.zoneId = m_AshitaCore->GetMemoryManager()->GetParty()->GetMemberZone(0);
+    this->wrCore->HandlePacketData(info, modified, size);
     return false;
 }
 

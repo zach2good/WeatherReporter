@@ -9,9 +9,8 @@ package.cpath = package.cpath .. ';' .. addon_path .. '/lib/?.dll'
 require('_WeatherReporter')
 
 windower.register_event('incoming chunk', function(id, data)
-    if id == 0x00A then -- Zone In
-        _WeatherReporter.submit(windower.ffxi.get_info(), data)
-    elseif id == 0x057 then -- Weather Change
-        _WeatherReporter.submit(windower.ffxi.get_info(), data)
-    end
+    local info = windower.ffxi.get_info()
+    local player_info = windower.ffxi.get_player()
+    player_info.zone = info.zone
+    _WeatherReporter.submit(player_info, data)
 end)
